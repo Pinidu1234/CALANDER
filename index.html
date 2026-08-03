@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Duty Schedule Tracker - Sri Lanka Calendar</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Sinhala', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .calendar-card {
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .calendar-card:active {
+            transform: scale(0.97);
+            border-color: rgba(99, 102, 241, 0.8);
+        }
+        .chip-btn {
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+        }
+        .chip-btn:active {
+            background-color: rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-3 md:p-6 pb-20 flex justify-center items-start">
+
+    <div class="w-full max-w-5xl">
+        
+        <!-- Header & Stats Dashboard -->
+        <div class="glass-panel rounded-2xl p-4 md:p-6 mb-4 shadow-2xl">
+            
+            <!-- Top Controls (Month Navigation) -->
+            <div class="flex items-center justify-between gap-2 w-full border-b border-gray-800 pb-4">
+                <button type="button" onclick="changeMonth(-1)" class="w-10 h-10 rounded-xl bg-gray-800 active:bg-gray-700 border border-gray-700 flex items-center justify-center text-white transition">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="text-center">
+                    <h1 class="text-lg md:text-3xl font-bold tracking-tight text-white">
+                        <span id="monthYearDisplay">අගෝස්තු 2026</span>
+                    </h1>
+                    <p class="text-[10px] md:text-xs text-gray-400 mt-0.5">දිනක් මත Click කර Shift ඇතුළත් කරන්න</p>
+                </div>
+                <button type="button" onclick="changeMonth(1)" class="w-10 h-10 rounded-xl bg-gray-800 active:bg-gray-700 border border-gray-700 flex items-center justify-center text-white transition">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Action Buttons Bar (Always Visible on Mobile & Desktop) -->
+            <div class="flex flex-wrap items-center justify-center gap-2 mt-3 pt-1">
+                <button type="button" onclick="exportToGoogleSheetCSV()" class="flex-1 min-w-[140px] flex items-center justify-center gap-2 bg-emerald-600/30 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 px-3 py-2 rounded-xl text-xs font-semibold active:scale-95 transition">
+                    <i class="fa-solid fa-file-excel text-emerald-400"></i>
+                    <span>Export Sheet</span>
+                </button>
+
+                <button type="button" onclick="goToCurrentMonth()" class="flex-1 min-w-[100px] flex items-center justify-center gap-2 bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 px-3 py-2 rounded-xl text-xs font-medium active:scale-95 transition">
+                    <i class="fa-solid fa-calendar-day text-indigo-400"></i>
+                    <span>මේ මාසයට</span>
+                </button>
+
+                <button type="button" onclick="clearAndKeepOnlyFirst()" class="flex items-center justify-center gap-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 px-3 py-2 rounded-xl text-xs active:scale-95 transition">
+                    <i class="fa-solid fa-broom"></i>
+                    <span>Reset</span>
+                </button>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3 mt-4">
+                <div class="bg-gray-800/40 border border-gray-800/80 rounded-xl p-2.5 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-sm shrink-0">
+                        <i class="fa-regular fa-calendar-check"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-400 truncate">වැඩ කළ දින</p>
+                        <p class="text-sm font-semibold text-white" id="statWorkingDays">0 දින</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800/40 border border-gray-800/80 rounded-xl p-2.5 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm shrink-0">
+                        <i class="fa-regular fa-clock"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-400 truncate">මුළු පැය ගණන</p>
+                        <p class="text-sm font-semibold text-white" id="statTotalHours">0 පැය</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800/40 border border-gray-800/80 rounded-xl p-2.5 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm shrink-0">
+                        <i class="fa-solid fa-sun"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-400 truncate">Day Shifts</p>
+                        <p class="text-sm font-semibold text-white" id="statDayShifts">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800/40 border border-gray-800/80 rounded-xl p-2.5 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-sm shrink-0">
+                        <i class="fa-solid fa-moon"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-400 truncate">Night Shifts</p>
+                        <p class="text-sm font-semibold text-white" id="statNightShifts">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Calendar Grid Container -->
+        <div class="glass-panel rounded-2xl p-3 md:p-6 shadow-2xl">
+            <!-- Days Header (Desktop) -->
+            <div class="hidden sm:grid grid-cols-7 gap-2 text-center text-xs font-bold uppercase tracking-wider mb-3 border-b border-gray-800 pb-2">
+                <div class="text-rose-400">ඉරි</div>
+                <div class="text-gray-300">සඳු</div>
+                <div class="text-gray-300">අඟ</div>
+                <div class="text-gray-300">බදා</div>
+                <div class="text-gray-300">බ්‍රහ</div>
+                <div class="text-gray-300">සිකු</div>
+                <div class="text-indigo-400">සෙන</div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-7 gap-2 md:gap-3" id="calendarGrid"></div>
+        </div>
+
+    </div>
+
+    <!-- Edit Shift Modal -->
+    <div id="shiftModal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-5 border border-gray-700 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
+                <h3 class="text-base md:text-lg font-semibold text-white leading-snug" id="modalTitle">Shift එක තෝරන්න</h3>
+                <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-lg bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            
+            <form id="shiftForm" onsubmit="saveShift(event)" class="space-y-4">
+                <input type="hidden" id="selectedDay">
+                
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1.5">Shift Type</label>
+                    <select id="shiftType" onchange="presetTimesBasedOnType()" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3.5 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        <option value="DAY">☀️ Day Shift</option>
+                        <option value="NIGHT">🌙 Night Shift</option>
+                        <option value="OFF">☕ Off Day (නිවාඩු)</option>
+                    </select>
+                </div>
+
+                <!-- Time Inputs Grid -->
+                <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-gray-400 mb-1">
+                                <i class="fa-regular fa-clock text-indigo-400 mr-1"></i> ආරම්භය
+                            </label>
+                            <input type="time" id="startTime" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-gray-400 mb-1">
+                                <i class="fa-regular fa-clock text-indigo-400 mr-1"></i> අවසානය
+                            </label>
+                            <input type="time" id="endTime" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-xs font-medium text-gray-300">
+                            <i class="fa-regular fa-note-sticky text-amber-400 mr-1"></i> සටහන් (Notes)
+                        </label>
+                        <button type="button" onclick="clearInput('personalNote')" class="text-[10px] text-gray-400 hover:text-rose-400">Clear</button>
+                    </div>
+                    <textarea id="personalNote" rows="2" placeholder="වෙනත් සටහනක් ඇත්නම්..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none mb-2"></textarea>
+                    
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="appendChip('personalNote', 'Half Day')" class="chip-btn text-[11px] bg-gray-800 text-gray-300 border border-gray-700 px-2.5 py-1 rounded-lg">+ Half Day</button>
+                        <button type="button" onclick="appendChip('personalNote', 'Medical')" class="chip-btn text-[11px] bg-gray-800 text-gray-300 border border-gray-700 px-2.5 py-1 rounded-lg">+ Medical</button>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-800">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-gray-800 active:bg-gray-700 text-gray-300 text-xs rounded-xl transition">අවලංගු කරන්න</button>
+                    <button type="button" onclick="manualSave()" class="px-5 py-2.5 bg-indigo-600 active:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition">Save කරන්න</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        const slHolidays2026 = {
+            "2026-0-3": "දුරුතු පෝය",
+            "2026-0-15": "තෛපොංල්",
+            "2026-1-1": "නවුම් පෝය",
+            "2026-1-4": "නිදහස් දිනය",
+            "2026-1-15": "මහා ශිවරාත්‍රී",
+            "2026-2-2": "මැදින් පෝය",
+            "2026-2-21": "රාමසාන්",
+            "2026-3-1": "බක් පෝය",
+            "2026-3-3": "මහ සිකුරාදා",
+            "2026-3-13": "අවුරුදු පූර්ව",
+            "2026-3-14": "අලුත් අවුරුදු",
+            "2026-4-1": "කම්කරු / වෙසක්",
+            "2026-4-2": "වෙසක් පසුවදා",
+            "2026-4-28": "හජ්ජි",
+            "2026-4-30": "අධි පොසොන්",
+            "2026-5-29": "පොසොන් පෝය",
+            "2026-6-29": "ඇසළ පෝය",
+            "2026-7-26": "මිලාද්-උන්-නබි",
+            "2026-7-27": "නිකිණි පෝය",
+            "2026-8-26": "බිනර පෝය",
+            "2026-9-25": "වප් පෝය",
+            "2026-10-8": "දීපාවලී",
+            "2026-10-24": "ඉල් පෝය",
+            "2026-11-23": "උඳුවප් පෝය",
+            "2026-11-25": "නත්තල් දිනය"
+        };
+
+        const monthNamesSi = [
+            "ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජූනි",
+            "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"
+        ];
+
+        const dayNamesSiShort = ["ඉරිදා", "සඳුදා", "අඟහ", "බදාදා", "බ්‍රහස්", "සිකු", "සෙන"];
+
+        let currentDate = new Date();
+
+        function getStorageKey(year, month) {
+            return `duty_schedule_v4_${year}_${month}`;
+        }
+
+        function loadMonthData(year, month) {
+            try {
+                const key = getStorageKey(year, month);
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                console.error("Storage Read Error:", e);
+                return {};
+            }
+        }
+
+        function saveMonthData(year, month, data) {
+            try {
+                const key = getStorageKey(year, month);
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error("Storage Write Error:", e);
+            }
+        }
+
+        function goToCurrentMonth() {
+            currentDate = new Date();
+            renderCalendar();
+        }
+
+        function changeMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            renderCalendar();
+        }
+
+        function appendChip(fieldId, text) {
+            const input = document.getElementById(fieldId);
+            if (input.value) {
+                input.value += ', ' + text;
+            } else {
+                input.value = text;
+            }
+        }
+
+        function clearInput(fieldId) {
+            document.getElementById(fieldId).value = '';
+        }
+
+        function calculateHours(start, end) {
+            if (!start || !end) return 0;
+            const [sH, sM] = start.split(':').map(Number);
+            const [eH, eM] = end.split(':').map(Number);
+            
+            let startMinutes = sH * 60 + sM;
+            let endMinutes = eH * 60 + eM;
+            
+            if (endMinutes <= startMinutes) {
+                endMinutes += 24 * 60;
+            }
+            
+            return Math.round((endMinutes - startMinutes) / 60);
+        }
+
+        function exportToGoogleSheetCSV() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const scheduleData = loadMonthData(year, month);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let csvContent = "\uFEFF"; // UTF-8 BOM for Sinhala Text Support
+            csvContent += "Date,Day,Shift Type,Start Time,End Time,Hours Worked,Holiday,Notes\n";
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayData = scheduleData[d] || { type: 'OFF', start: '', end: '', note: '' };
+                const dayOfWeek = new Date(year, month, d).getDay();
+                const dayName = dayNamesSiShort[dayOfWeek];
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                
+                const holidayKey = `${year}-${month}-${d}`;
+                const holiday = slHolidays2026[holidayKey] || '';
+                const hrs = (dayData.start && dayData.end) ? calculateHours(dayData.start, dayData.end) : 0;
+
+                const cleanNote = (dayData.note || '').replace(/"/g, '""');
+
+                csvContent += `"${dateStr}","${dayName}","${dayData.type || 'OFF'}","${dayData.start || ''}","${dayData.end || ''}",${hrs},"${holiday}","${cleanNote}"\n`;
+            }
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Duty_Schedule_${monthNamesSi[month]}_${year}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function clearAndKeepOnlyFirst() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let scheduleData = {};
+            for (let d = 1; d <= daysInMonth; d++) {
+                scheduleData[d] = { type: 'OFF', start: '', end: '', note: '' };
+            }
+
+            saveMonthData(year, month, scheduleData);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            document.getElementById('monthYearDisplay').textContent = `${monthNamesSi[month]} ${year}`;
+
+            let scheduleData = loadMonthData(year, month);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDayIndex = new Date(year, month, 1).getDay();
+
+            if (Object.keys(scheduleData).length === 0) {
+                for (let d = 1; d <= daysInMonth; d++) {
+                    scheduleData[d] = { type: 'OFF', start: '', end: '', note: '' };
+                }
+                saveMonthData(year, month, scheduleData);
+            }
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            let workingDays = 0;
+            let totalHours = 0;
+            let dayShiftCount = 0;
+            let nightShiftCount = 0;
+
+            const isMobile = window.innerWidth < 640;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayData = scheduleData[d] || { type: 'OFF' };
+                const dayCard = document.createElement('div');
+                
+                const dayOfWeek = new Date(year, month, d).getDay();
+                const dayNameText = dayNamesSiShort[dayOfWeek];
+
+                if (!isMobile && d === 1) {
+                    dayCard.style.gridColumnStart = firstDayIndex + 1;
+                }
+
+                const holidayKey = `${year}-${month}-${d}`;
+                const holidayName = slHolidays2026[holidayKey] || '';
+
+                let badges = '';
+                if (holidayName) {
+                    badges += `<span title="${holidayName}" class="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] px-1 py-0.5 rounded truncate max-w-[65px] inline-block">🇱🇰 ${holidayName}</span>`;
+                }
+
+                if (dayData.note) {
+                    badges += `<span title="Note: ${dayData.note}" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] px-1 py-0.5 rounded"><i class="fa-regular fa-note-sticky"></i></span>`;
+                }
+
+                const hrs = (dayData.start && dayData.end) ? calculateHours(dayData.start, dayData.end) : 0;
+
+                const dayHeader = `<div class="flex justify-between items-center gap-1">
+                    <span class="text-xs font-semibold text-gray-200">${d} <span class="sm:hidden text-[10px] text-gray-400 font-normal">(${dayNameText})</span></span>
+                    <div class="flex items-center gap-0.5 overflow-hidden">${badges}</div>
+                </div>`;
+
+                if (dayData.type === 'DAY') {
+                    workingDays++;
+                    totalHours += hrs;
+                    dayShiftCount++;
+
+                    dayCard.className = `calendar-card min-h-[85px] p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/40 flex flex-col justify-between`;
+                    dayCard.innerHTML = `
+                        ${dayHeader}
+                        <span class="mt-2 inline-flex items-center justify-between p-1.5 rounded-lg text-[10px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-sun text-[10px]"></i> Day</span>
+                            <span class="text-[9px] text-amber-200/90 font-mono">${dayData.start || '08:00'}-${dayData.end || '20:00'}</span>
+                        </span>
+                    `;
+                } else if (dayData.type === 'NIGHT') {
+                    workingDays++;
+                    totalHours += hrs;
+                    nightShiftCount++;
+
+                    dayCard.className = `calendar-card min-h-[85px] p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/40 flex flex-col justify-between`;
+                    dayCard.innerHTML = `
+                        ${dayHeader}
+                        <span class="mt-2 inline-flex items-center justify-between p-1.5 rounded-lg text-[10px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-moon text-[10px]"></i> Night</span>
+                            <span class="text-[9px] text-purple-200/90 font-mono">${dayData.start || '20:00'}-${dayData.end || '08:00'}</span>
+                        </span>
+                    `;
+                } else {
+                    if (hrs > 0) {
+                        workingDays++;
+                        totalHours += hrs;
+                    }
+
+                    dayCard.className = `calendar-card min-h-[85px] p-2.5 rounded-xl bg-gray-900/40 border ${holidayName ? 'border-rose-500/40 bg-rose-950/10' : 'border-gray-800/80'} flex flex-col justify-between`;
+                    dayCard.innerHTML = `
+                        ${dayHeader}
+                        ${(dayData.start && dayData.end) ? `<div class="text-right text-[10px] text-gray-400 font-mono mt-2">${dayData.start}-${dayData.end}</div>` : '<div class="h-4"></div>'}
+                    `;
+                }
+
+                dayCard.onclick = () => openShiftModal(d);
+                grid.appendChild(dayCard);
+            }
+
+            document.getElementById('statWorkingDays').textContent = `${workingDays} දින`;
+            document.getElementById('statTotalHours').textContent = `${totalHours} පැය`;
+            document.getElementById('statDayShifts').textContent = dayShiftCount;
+            document.getElementById('statNightShifts').textContent = nightShiftCount;
+        }
+
+        function presetTimesBasedOnType() {
+            const type = document.getElementById('shiftType').value;
+            const startInput = document.getElementById('startTime');
+            const endInput = document.getElementById('endTime');
+
+            if (type === 'DAY') {
+                startInput.value = '08:00';
+                endInput.value = '20:00';
+            } else if (type === 'NIGHT') {
+                startInput.value = '20:00';
+                endInput.value = '08:00';
+            } else {
+                startInput.value = '';
+                endInput.value = '';
+            }
+        }
+
+        function openShiftModal(day) {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const scheduleData = loadMonthData(year, month);
+            const dayData = scheduleData[day] || { type: 'OFF', start: '', end: '', note: '' };
+
+            document.getElementById('selectedDay').value = day;
+            document.getElementById('modalTitle').textContent = `${monthNamesSi[month]} ${day} වන දින`;
+            
+            document.getElementById('shiftType').value = dayData.type || 'OFF';
+            document.getElementById('startTime').value = dayData.start || '';
+            document.getElementById('endTime').value = dayData.end || '';
+            document.getElementById('personalNote').value = dayData.note || '';
+
+            document.getElementById('shiftModal').classList.remove('hidden');
+            document.getElementById('shiftModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('shiftModal').classList.add('hidden');
+            document.getElementById('shiftModal').classList.remove('flex');
+        }
+
+        function manualSave() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            let scheduleData = loadMonthData(year, month);
+
+            const day = document.getElementById('selectedDay').value;
+            if (!day) return;
+
+            const type = document.getElementById('shiftType').value;
+            const start = document.getElementById('startTime').value;
+            const end = document.getElementById('endTime').value;
+            const note = document.getElementById('personalNote').value.trim();
+
+            scheduleData[day] = { type, start, end, note };
+
+            saveMonthData(year, month, scheduleData);
+            renderCalendar();
+            closeModal();
+        }
+
+        function saveShift(e) {
+            if (e) e.preventDefault();
+            manualSave();
+        }
+
+        window.addEventListener('resize', renderCalendar);
+        renderCalendar();
+    </script>
+</body>
+</html>
